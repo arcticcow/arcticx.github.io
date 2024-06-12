@@ -1,3 +1,9 @@
 [submodule "quickstart/themes/Stack"]
 	path = quickstart/themes/Stack
 	url = https://github.com/CaiJimmy/hugo-theme-stack
+[submodule "themes/risotto"]
+	path = themes/risotto
+	url = https://github.com/joeroe/risotto
+[submodule "risotto"]
+	path = risotto
+	url = https://github.com/joeroe/risotto

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Aws on arcticx@snowverflow</title>
+    <link>http://localhost:1313/tags/aws/</link>
+    <description>Recent content in Aws on arcticx@snowverflow</description>
+    <generator>Hugo</generator>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 11 Sep 2023 00:00:00 +0000</lastBuildDate>
+    <atom:link href="http://localhost:1313/tags/aws/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Running a CTF that Outlasts a Bag of Popcorn</title>
+      <link>http://localhost:1313/post/2023-09-11-running-a-ctf-wo-lifesupport/</link>
+      <pubDate>Mon, 11 Sep 2023 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/post/2023-09-11-running-a-ctf-wo-lifesupport/</guid>
+      <description>&lt;p&gt;My tales and experiences from running PatriotCTF 2023.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

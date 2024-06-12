@@ -1,0 +1,26 @@
+/* Tokyo Night Light by Michaël Ball */
+
+
+:root {
+  --base00: #FADADA; /* Light pink */
+  --base01: #736464; /* Lighter pink */
+  --base02: #FCE0E0; /* Even lighter pink */
+  --base03: #C56BC5; /* Darker pink */
+  --base04: #000000; /* Light pink accent 2 */
+  --base05: #FFC3C3; /* Light pink accent 3 */
+  --base06: #F08F8F; /* Light pink accent 4 */
+  --base07: #FFFFFF; /* White background */
+  --base08: #F6B6B6; /* Matching pink accent */
+  --base09: #E88B8B; /* Darker pink accent */
+  --base0A: #FCE0E0; /* Lighter pink accent */
+  --base0B: #FFA7A7; /* Light pink accent */
+  --base0C: #F3A7A7; /* Same as base03 */
+  --base0D: #000000; /* Same as base00 */
+  --base0E: #FFD9D9; /* Same as base04 */
+  --base0F: #F08F8F; /* Same as base06 */
+
+  /* Adjusted text colors */
+  --text-primary: var(--base00); /* Main text color */
+  --text-secondary: var(--base03); /* Secondary text color */
+  --text-tertiary: var(--base06); /* Tertiary text color */
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><title>Feed the Magical Goat (Battelle) &ndash; arcticx@snowverflow</title>
+<meta name="description" content="snowverflow.tech is a technical blog owned and operated by arcticx (aka arcticcow).">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"/>
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" />
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/academicons/1.9.1/css/academicons.min.css" integrity="sha512-b1ASx0WHgVFL5ZQhTgiPWX+68KjS38Jk87jg7pe+qC7q9YkEtFq0z7xCglv7qGIs/68d3mAp+StfC8WKC5SSAg==" crossorigin="anonymous" />
+
+
+<link rel="stylesheet" href="http://localhost:1313/css/palettes/pink.css">
+<link rel="stylesheet" href="http://localhost:1313/css/risotto.css">
+<link rel="stylesheet" href="http://localhost:1313/css/custom.css">
+</head>
+
+    <body>
+        <div class="page">
+
+            <header class="page__header"><nav class="page__nav main-nav">
+    <ul>
+    <h1 class="page__logo"><a href="http://localhost:1313/" class="page__logo-inner">arcticx@snowverflow</a></h1>
+    
+    
+    <li class="main-nav__item"><a class="nav-main-item active" href="http://localhost:1313/post/" title="Posts">Posts</a></li>
+    
+    </ul>
+</nav>
+
+</header>
+
+            <section class="page__body">
+    <header class="content__header">
+        <h1>Feed the Magical Goat (Battelle)</h1>
+    </header>
+    
+    <div class="content__body">
+        <p>Reversing challenge from Battelle showcasing angr&rsquo;s file simulation feature!</p>
+<h1 id="table-of-contents">Table of contents</h1>
+<ol>
+<li><a href="#reversing">Reversing</a></li>
+<li><a href="#angr">Angr Solve</a></li>
+</ol>
+<h2 id="feed-the-magical-goat-battelle">Feed the Magical Goat (Battelle)</h2>
+<p>The following is a writeup for a reverse engineering challenge made by Battelle as one of their cyber career challenges. This challenge explores the use of <a href="https://angr.io">angr</a> and it&rsquo;s ability to emulate file systems for the use of symbolic data. If you are unfamiliar with Angr and the concept of symbolic execution, I made a <a href="https://youtu.be/QkVzjn3z0iw">YouTube</a> video exploring and explaining this which I (obviously) highly recommend you watch.
+<a name="reversing"></a></p>
+<h1 id="part-1-reversing">Part 1: Reversing</h1>
+<p>A zip file containing a 32-bit, unstripped ELF is provided as part of the challenge. Running the binary outputs a bunch of text and then ends with the binary deleting itself.</p>
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_2.png" /> 
+</p> 
+Starting a Binja project and looking through the strings reveals the following:
+- File operations
+- A filename
+- A flag format string (Character by character, flag is likely calculated within the binary)
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_3.png" /> 
+</p> 
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_4.png" /> 
+</p> 
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_5.png" /> 
+</p> 
+<p>Viewing main, a function is called which interacts with what is likely the expected file called <code>give_offering</code>.</p>
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_6.png" /> 
+</p> 
+The function first opens "chow.down" and assigns the stream to eax. The following conditional checks if the operation was not successful via checking the file descriptor in eax. If it wasn't, the program closes the file descriptor, unlinks the binary (deletes it), prints the outro and calls exit. From here on I will refer to this blob as the fail block. Assuming this conditional was false, the file is allocated onto the heap at eax_2. The next conditional checks if eax_2 is 0x40, if true a hint is printed, both the elf and chow.down are deleted and the chunk is freed, followed by a fail block. The next conditional returns the pointer to the file contents and is the path I have to follow in order to continue program execution. It checks if the more than 0xf bytes were read.
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_7.png" /> 
+</p> 
+Returning to main, multiple conditions are checked against various offsets of the file content. If code execution continues without a conditional being true, the flag is printed using these file content offsets, of which I assume were operated on by the functions in the conditions.
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_8.png" /> 
+</p> 
+Looking at just one of the functions reveals that it is quite complicated.
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_9.png" /> 
+</p> 
+Manually reversing these functions would be significantly detremental to my mental health, so instead I'll use symbolic execution to find an execution path that leads to the flag print and what the file contents need to be in order for this path to execute. Angr is a symbolic execution engine for python that utilizes microsoft's SMT z3 solver and a simulation manager to manage execution states. It is also capable of file system emulation. Using this feature will be simpler than alternative methods of symbol placement, such as directly injecting into memory.
+<p><a name="angr"></a></p>
+<h1 id="part-2-im-angry-fs">Part 2: I&rsquo;m Angry FS</h1>
+<p>The following is my solve script:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span><span style="color:#f92672">import</span> angr<span style="color:#f92672">,</span>claripy<span style="color:#f92672">,</span>sys
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>p <span style="color:#f92672">=</span> angr<span style="color:#f92672">.</span>Project(<span style="color:#e6db74">&#34;./billygoat&#34;</span>)
+</span></span><span style="display:flex;"><span>s <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>factory<span style="color:#f92672">.</span>blank_state(addr<span style="color:#f92672">=</span><span style="color:#ae81ff">0x8048f46</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>symbol <span style="color:#f92672">=</span> claripy<span style="color:#f92672">.</span>BVS(<span style="color:#e6db74">&#39;file&#39;</span>,<span style="color:#ae81ff">8</span><span style="color:#f92672">*</span><span style="color:#ae81ff">0xf</span>)
+</span></span><span style="display:flex;"><span>f <span style="color:#f92672">=</span> angr<span style="color:#f92672">.</span>storage<span style="color:#f92672">.</span>SimFile(<span style="color:#e6db74">&#34;chow.down&#34;</span>, content<span style="color:#f92672">=</span>symbol)
+</span></span><span style="display:flex;"><span>s<span style="color:#f92672">.</span>fs<span style="color:#f92672">.</span>insert(<span style="color:#e6db74">&#34;chow.down&#34;</span>,f)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">win</span>(state): <span style="color:#75715e"># Check stdout for &#34;flag{&#34; and print flag</span>
+</span></span><span style="display:flex;"><span>        out <span style="color:#f92672">=</span> str(state<span style="color:#f92672">.</span>posix<span style="color:#f92672">.</span>dumps(sys<span style="color:#f92672">.</span>stdout<span style="color:#f92672">.</span>fileno()))
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#34;flag{&#34;</span> <span style="color:#f92672">in</span> out:
+</span></span><span style="display:flex;"><span>                print(<span style="color:#e6db74">&#34;Flag: flag&#34;</span><span style="color:#f92672">+</span>out<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;flag&#34;</span>)[<span style="color:#ae81ff">1</span>][:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>])
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;flag{&#34;</span> <span style="color:#f92672">in</span> out
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>simgr <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>factory<span style="color:#f92672">.</span>simulation_manager(s)
+</span></span><span style="display:flex;"><span>simgr<span style="color:#f92672">.</span>explore(find<span style="color:#f92672">=</span>win, avoid<span style="color:#f92672">=</span><span style="color:#ae81ff">0x80490ce</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>print(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#34;Input: &#34;</span><span style="color:#f92672">+</span>simgr<span style="color:#f92672">.</span>found[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>posix<span style="color:#f92672">.</span>closed_fds[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>concretize())
+</span></span></code></pre></div><p>Let&rsquo;s step through it to understand it better.
+The first few lines create the Angr project, create the initial state which starts in <code>give_offering</code> (0x8048f46) and creates a symbol whose size is based on the constraint within that function.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span>p <span style="color:#f92672">=</span> angr<span style="color:#f92672">.</span>Project(<span style="color:#e6db74">&#34;./billygoat&#34;</span>)
+</span></span><span style="display:flex;"><span>s <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>factory<span style="color:#f92672">.</span>blank_state(addr<span style="color:#f92672">=</span><span style="color:#ae81ff">0x8048f46</span>)
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>symbol <span style="color:#f92672">=</span> claripy<span style="color:#f92672">.</span>BVS(<span style="color:#e6db74">&#39;file&#39;</span>,<span style="color:#ae81ff">8</span><span style="color:#f92672">*</span><span style="color:#ae81ff">0xf</span>)
+</span></span></code></pre></div><p>Next a SimFile object is created with the name &ldquo;chow.down&rdquo; and whose content is the symbolic data. It is then inserted into the simulated file system.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span>f <span style="color:#f92672">=</span> angr<span style="color:#f92672">.</span>storage<span style="color:#f92672">.</span>SimFile(<span style="color:#e6db74">&#34;chow.down&#34;</span>, content<span style="color:#f92672">=</span>symbol)
+</span></span><span style="display:flex;"><span>s<span style="color:#f92672">.</span>fs<span style="color:#f92672">.</span>insert(<span style="color:#e6db74">&#34;chow.down&#34;</span>,f)
+</span></span></code></pre></div><p>Moving on a function to check for a valid state is created. It checks for the substring &ldquo;flag{&rdquo; in the stdout and prints it. Then the simulation manager is created and explored with find set to this function and avoid set to the fail block.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span><span style="color:#66d9ef">def</span> <span style="color:#a6e22e">win</span>(state): <span style="color:#75715e"># Check stdout for &#34;flag{&#34; and print flag</span>
+</span></span><span style="display:flex;"><span>        out <span style="color:#f92672">=</span> str(state<span style="color:#f92672">.</span>posix<span style="color:#f92672">.</span>dumps(sys<span style="color:#f92672">.</span>stdout<span style="color:#f92672">.</span>fileno()))
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">if</span> <span style="color:#e6db74">&#34;flag{&#34;</span> <span style="color:#f92672">in</span> out:
+</span></span><span style="display:flex;"><span>                print(<span style="color:#e6db74">&#34;Flag: flag&#34;</span><span style="color:#f92672">+</span>out<span style="color:#f92672">.</span>split(<span style="color:#e6db74">&#34;flag&#34;</span>)[<span style="color:#ae81ff">1</span>][:<span style="color:#f92672">-</span><span style="color:#ae81ff">3</span>])
+</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#e6db74">&#34;flag{&#34;</span> <span style="color:#f92672">in</span> out
+</span></span><span style="display:flex;"><span>
+</span></span><span style="display:flex;"><span>simgr <span style="color:#f92672">=</span> p<span style="color:#f92672">.</span>factory<span style="color:#f92672">.</span>simulation_manager(s)
+</span></span><span style="display:flex;"><span>simgr<span style="color:#f92672">.</span>explore(find<span style="color:#f92672">=</span>win, avoid<span style="color:#f92672">=</span><span style="color:#ae81ff">0x80490ce</span>)
+</span></span></code></pre></div><p>The last line is interesting and I initially had to get help with this as Angr has some issues with managing file descriptors. Essentially its purpose is to print out the symbolic content of the file that led to the success block.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span>print(<span style="color:#e6db74">b</span><span style="color:#e6db74">&#34;Input: &#34;</span><span style="color:#f92672">+</span>simgr<span style="color:#f92672">.</span>found[<span style="color:#ae81ff">0</span>]<span style="color:#f92672">.</span>posix<span style="color:#f92672">.</span>closed_fds[<span style="color:#ae81ff">0</span>][<span style="color:#ae81ff">1</span>]<span style="color:#f92672">.</span>concretize())
+</span></span></code></pre></div><p>Looking at the source of <a href="https://github.com/angr/angr/blob/master/angr/state_plugins/posix.py">Angr&rsquo;s posix</a> can help clarify this line a bit better. A deep copy of the SimState is created and the the closed_fds copy is a list of the super object&rsquo;s closed_fds, which is also a list. This line accesses the right file descriptor and patches the input together using <code>concretize</code>.</p>
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_11.png" /> 
+</p> 
+<p>With that, the challenge is solved.</p>
+<p align="center"> 
+  <img src="/assets/2023-03-23/Screenshot_12.png" /> 
+</p>
+    </div>
+    <footer class="content__footer"></footer>
+
+            </section>
+
+            <section class="page__aside">
+                <div class="aside__about">
+<div class="aside__about">
+    
+<h1 class="about__title">snowverflow</h1>
+<p class="about__description">snowverflow.tech is a technical blog owned and operated by arcticx (aka arcticcow).</p>
+</div>
+
+
+<ul class="aside__social-links">
+    
+    <li>
+        <a href="https://github.com/arcticcow" rel="me" aria-label="GitHub" title="GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="mailto:ssmilescycs@gmail.com" rel="me" aria-label="Email" title="Email"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="https://twitter.com/arctic0x78" rel="me" aria-label="Twitter" title="Twitter"><i class="fa-brands fa-twitter" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="https://www.linkedin.com/in/shiloh-smiles-42076b94" rel="me" aria-label="LinkedIn" title="LinkedIn"><i class="fa-brands fa-linkedin" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+</ul>
+</div>
+                <hr>
+                <div class="aside__content">
+    <p>Feed the Magical Goat (Battelle)</p>
+    
+        <p>
+            By Dylan, 
+            2023-03-23
+        </p>
+    
+
+    
+
+                </div>
+            </section>
+
+            <footer class="page__footer"><p>
+    
+    
+    
+    
+    
+    
+      
+    
+    
+    
+      
+      
+          
+            
+            
+                
+
+            
+          
+      
+    
+</p>
+<br /><br />
+<p class="copyright"></p>
+<p class="advertisement">Powered by <a href="https://gohugo.io/">hugo</a> and <a href="https://github.com/joeroe/risotto">risotto</a>.</p>
+</footer>
+
+        </div>
+    </body>
+
+</html>

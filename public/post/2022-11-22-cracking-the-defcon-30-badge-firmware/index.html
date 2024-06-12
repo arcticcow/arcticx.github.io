@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><title>Cracking the DEFCON 30 Badge Firmware &ndash; arcticx@snowverflow</title>
+<meta name="description" content="snowverflow.tech is a technical blog owned and operated by arcticx (aka arcticcow).">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8"/>
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" />
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/academicons/1.9.1/css/academicons.min.css" integrity="sha512-b1ASx0WHgVFL5ZQhTgiPWX+68KjS38Jk87jg7pe+qC7q9YkEtFq0z7xCglv7qGIs/68d3mAp+StfC8WKC5SSAg==" crossorigin="anonymous" />
+
+
+<link rel="stylesheet" href="http://localhost:1313/css/palettes/pink.css">
+<link rel="stylesheet" href="http://localhost:1313/css/risotto.css">
+<link rel="stylesheet" href="http://localhost:1313/css/custom.css">
+</head>
+
+    <body>
+        <div class="page">
+
+            <header class="page__header"><nav class="page__nav main-nav">
+    <ul>
+    <h1 class="page__logo"><a href="http://localhost:1313/" class="page__logo-inner">arcticx@snowverflow</a></h1>
+    
+    
+    <li class="main-nav__item"><a class="nav-main-item active" href="http://localhost:1313/post/" title="Posts">Posts</a></li>
+    
+    </ul>
+</nav>
+
+</header>
+
+            <section class="page__body">
+    <header class="content__header">
+        <h1>Cracking the DEFCON 30 Badge Firmware</h1>
+    </header>
+    
+    <div class="content__body">
+        <p>Extracting and reversing the firmware of the DC30 badge to beat the badge challenge!</p>
+<h1 id="table-of-contents">Table of contents</h1>
+<ol>
+<li><a href="#backstory">Backstory</a></li>
+<li><a href="#extraction">Firmware Extraction</a></li>
+<li><a href="#analysis">Analysis and Finding Check</a></li>
+<li><a href="#mapping">Mapping and Decoding</a></li>
+</ol>
+<p><a name="backstory"></a></p>
+<h3 id="backstory-and-objective">Backstory and Objective</h3>
+<p>Once upon a time I was very excited to fly to Las Vegas and attend <a href="https://defcon.org/html/defcon-30/dc-30-index.html">DEFCON 30</a> the annual go-to security conference. This was going to be my first conference and I had purchased pre-registration tickets, which was a new system that DEFCON was using to allow attendees to guarantee a badge and semi-skip LINECON. However, because of a personal emergency that appeared last minute, I was unable to attend and I gifted my pre-registration to my good friend and mentor <a href="https://ctftime.org/user/3509">playoff-rondo</a>. Later on when I was catching up with him he gave me his badge. DEFCON badges usually have some sort of challenge on them and this year&rsquo;s badge was some sort of piano keyboard. <a href="https://github.com/Kybr-git/DC30-Badge-Challenge-Writeup/blob/main/README.md">This is the writeup made by the attendee that solved the badge challenge and won a black badge</a>, as you can see it is meant to be solved in part by interacting with other attendees who have a different variant of the badge. This is obviously not possible for me, so my goal was to reverse engineer the badge and find what key combo needs to be pressed in order to win the first part of the challenge.</p>
+<p><a name="extraction"></a></p>
+<h1 id="part-1-extracting-firmware-from-spi-flash">Part 1: Extracting Firmware from SPI Flash</h1>
+<p>I began by using a magnifying glass, pen and paper to identify all the visible chips on the PCB.<br>
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_1.png" /> 
+</p> 
+<br> 
+The two important chips to note are the <a href="https://www.winbond.com/hq/product/code-storage-flash-memory/serial-nor-flash/?__locale=en&partNo=W25Q16JV">Winbond W25Q16JV</a> (flash chip) and the <a href="https://thepihut.com/products/raspberry-pi-rp2040-microcontroller">RP2 B2</a> (microcontroller). The flash memory chip will be used to grab the firmware and will be the target chip to physically extract. The microcontroller will be used to determine the architecture, conventions and other information that will be useful when analyzing the firmware. 
+<p>There are tools available to extract firmware from a surface-mounted chip without having to actually remove the component, however I will be using a <a href="https://www.aliexpress.us/item/2251832631316605.html?spm=a2g0o.ppclist.product.2.42fduQgFuQgFn0&pdp_npi=2%40dis%21USD%21US%20%248.25%21%248.00%21%21%21%21%21%402101c84a16691420847026788ea9a4%2112000018677635870%21btf&_t=pvid%3A91be51b8-068b-46f5-ad65-2474e20aa1d4&afTraceInfo=32817631357__pc__pcBridgePPC__xxxxxx__1669142084&gatewayAdapt=glo2usa&_randl_shipto=US">TL866II+ universal programmer</a>, so I will have to remove the chip from the PCB, feed the chip to the device using the appropriate adapter and connect the programmer to my VM for extraction. A heat gun would be ideal for removing a small surface mounted chip like this without damaging the PCB, however I do not have access to such equipment, so I use a soldering iron and tweezers. I heat up each joint of the chip with the iron and lift the leg up with tweezers and a magnifying glass. After I have detached the chip from the board, I go around with the iron again and a desoldering pump in an attempt to clean up as much excess solder as possible from each leg. Then I lock the flash chip in the corresponding adapter and insert it into the TL866II+.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_2.png" /> 
+</p> 
+<br> 
+Unfortunately, the whole ordeal was pretty messy and resulted in a bit of copper from the PCB being destroyed. 
+<br> 
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_3.png" /> 
+</p> 
+<br> 
+In my ubuntu machine I use <a href="https://gitlab.com/DavidGriffith/minipro/">the minipro program</a> to interact with the chip programmer. The following command writes the firmware to a file.  
+``` 
+minipro -p "W25Q16JV@SOIC8" -r flash.bin 
+``` 
+<p>I can verify that this is the firmware by running <code>strings</code> and examining the output.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_4.png" /> 
+</p> 
+<br> 
+<p><a name="analysis"></a></p>
+<h1 id="part-2-analyzing-firmware-and-finding-the-comparison-function">Part 2: Analyzing Firmware and Finding the Comparison Function</h1>
+<p>The MCU is a rpi2040 which makes use of the <a href="https://en.wikipedia.org/wiki/Execute_in_place">&ldquo;execute in place&rdquo;</a> feature. This is a feature that improves performance by enabling execution directly in flash storage rather than execution in the MCU&rsquo;s limited memory area. It is important that we keep this in mind before starting to analyze the firmware. Firmware has no entry point and instead has a defined address at which program execution begins. We can find this base address by viewing the <a href="https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf">rpi2040 datasheet</a> and navigating to the &ldquo;Address Map&rdquo; page from the table of contents. The base address will be the XIP address (execute in place). We need to specify this address as the base address in whatever we use to analyze the firmware to load the correct segment.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_5.png" /> 
+</p> 
+<br> 
+<p>Using Binaryninja I can specify the base address when creating a new project. Binja automatically detects the thumb2 ARM architecture.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_6.png" /> 
+</p> 
+<br> 
+<p>I start to try and identify useful symbols and organize the code by searching through strings and going to their code references.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_7.png" /> 
+</p> 
+<br> 
+<p>Some areas have been incorrectly loaded as symbols so I undefine them.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_8.png" /> 
+</p> 
+<br> 
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_9.png" /> 
+</p> 
+<br> 
+<p>I also rename symbols that have obvious functions for clarity.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_10.png" /> 
+</p> 
+<br> 
+<p>Identifying and following the code reference of the interesting string, &ldquo;YOU DID IT!&rdquo; leads to what seems to be the function that is called when a correct key combination is entered.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_11.png" /> 
+</p> 
+<br> 
+<p>The only code reference leads to the following function. The first thing I noted when initially examining it was the comparison inside the loop to 0x2d. This conditional is equal to <code>if(r3_1 == 0x2d(which is 46))</code> since the if-statement ends in a break. Examining the note count on my own badge and noting the number of badges with different variations, we know the total number of piano keys that make-up the passing combo is 46, since all badge&rsquo;s music sheets will be used.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_12.png" /> 
+</p> 
+<br> 
+<p>The decompilation process complicated this loop a bit, so for sanity&rsquo;s sake lets simplify it a bit in our heads. The while loop iterates over the length of the correct combo, once it reaches 46 (the length of the combo) it succeeds. The second if-statement is most important, it compares every key (it gets the key by referencing the location of the key presses in memory with the offset of the current index) with the given character at <strong>string[index]</strong> if it is not equal, it breaks ending the while loop early and never reaching the success block, else it increments combo_length. So the string in the second conditional is what we need to pay attention too.</p>
+<p><code>C@&gt;&lt;&gt;@C@&gt;&lt;&gt;@C@CE@EC@&gt;&lt;C@&gt;&lt;&gt;@C@&gt;&lt;&gt;@&gt;@C@CE@EGDB@</code></p>
+<p>Since each key press is being compared with this string, it is safe to assume that each character in this string is mapped to a physical key on the badge. We should find another function which identifies this mapping. This would likely be the keypress code blobs directly.</p>
+<p>Some things to note before continuing:</p>
+<ul>
+<li>User key buffer stored @ 0x2000xxxx (keypresses).</li>
+<li>The checkwin function will likely be called every time a key is pressed, to check if the newly modified buffer is a win.</li>
+</ul>
+<p><a name="mapping"></a></p>
+<h1 id="part-3-finding-the-mapping-and-decoding-the-key-combo">Part 3: Finding the Mapping and Decoding the Key Combo</h1>
+<p>checkwin has a lot of code references. Each call is likely in a blob for a key press. I&rsquo;ll pin the references window and tag them all to keep everything organized and visible on the pane.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_13.png" /> 
+</p> 
+<br> 
+<br> 
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_14.png" /> 
+</p> 
+<br> 
+<p>Examining the very first reference we can take note that a pointer is being passed as the argument. The value at this pointer is being assigned above. For this instance that value is 0x3c, whose ascii representation is &ldquo;&lt;&rdquo;.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_15.png" /> 
+</p> 
+<br> 
+<p>Each blob that assigns a mapping is sequential in the code block, so I can safely assume that these are the keyboard mappings assigned in the order as they appear on the physical keyboard.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_16.png" /> 
+</p> 
+<br> 
+<p>Proceeding to the next checkwin call will reveal the mapping for the C# key (the little black key) which comes next.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_17.png" /> 
+</p> 
+<br> 
+<br> 
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_18.png" /> 
+</p> 
+<br> 
+<p>Proceeding through every checkwin call will reveal the character mappings for the entire keyboard.
+<br></p>
+<p align="center"> 
+  <img src="/assets/2022-11-22/Screenshot_19.png" /> 
+</p> 
+<br> 
+<h3 id="hurray">Hurray!</h3>
+<p>With these mappings we can decipher the string compared in the checkwin function to the equivalent keys on the keyboard.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python3" data-lang="python3"><span style="display:flex;"><span>key_map <span style="color:#f92672">=</span> {<span style="color:#e6db74">&#34;&lt;&#34;</span>:<span style="color:#e6db74">&#34;C&#34;</span>,<span style="color:#e6db74">&#34;=&#34;</span>:<span style="color:#e6db74">&#34;C#&#34;</span>,<span style="color:#e6db74">&#34;&gt;&#34;</span>:<span style="color:#e6db74">&#34;D&#34;</span>,<span style="color:#e6db74">&#34;?&#34;</span>:<span style="color:#e6db74">&#34;D#&#34;</span>,<span style="color:#e6db74">&#34;@&#34;</span>:<span style="color:#e6db74">&#34;E&#34;</span>,<span style="color:#e6db74">&#34;A&#34;</span>:<span style="color:#e6db74">&#34;F&#34;</span>, 
+</span></span><span style="display:flex;"><span><span style="color:#e6db74">&#34;B&#34;</span>:<span style="color:#e6db74">&#34;F#&#34;</span>,<span style="color:#e6db74">&#34;C&#34;</span>:<span style="color:#e6db74">&#34;G&#34;</span>,<span style="color:#e6db74">&#34;D&#34;</span>:<span style="color:#e6db74">&#34;G#&#34;</span>,<span style="color:#e6db74">&#34;E&#34;</span>:<span style="color:#e6db74">&#34;A&#34;</span>,<span style="color:#e6db74">&#34;F&#34;</span>:<span style="color:#e6db74">&#34;A#&#34;</span>,<span style="color:#e6db74">&#34;G&#34;</span>:<span style="color:#e6db74">&#34;B&#34;</span>} 
+</span></span><span style="display:flex;"><span>key_combo <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;&#34;</span> 
+</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> c <span style="color:#f92672">in</span> <span style="color:#e6db74">&#34;C@&gt;&lt;&gt;@C@&gt;&lt;&gt;@C@CE@EC@&gt;&lt;C@&gt;&lt;&gt;@C@&gt;&lt;&gt;@&gt;@C@CE@EGDB@&#34;</span>: 
+</span></span><span style="display:flex;"><span>  key_combo <span style="color:#f92672">+=</span> key_map<span style="color:#f92672">.</span>get(c)<span style="color:#f92672">+</span><span style="color:#e6db74">&#34; &#34;</span> 
+</span></span><span style="display:flex;"><span> 
+</span></span><span style="display:flex;"><span>print(key_combo) 
+</span></span></code></pre></div><p>The following is the correct key-combination/tune we need to play on the badge keyboard in order to pass the first challenge.
+<code>G E D C D E G E D C D E G E G A E A G E D C G E D C D E G E D C D E D E G E G A E A B G# F# E</code></p>
+<h3 id="sources">Sources</h3>
+<ul>
+<li><a href="https://www.winbond.com/hq/support/documentation/levelOne.jsp?__locale=en&DocNo=DA00-W25Q16JV.1"><a href="https://www.winbond.com/hq/support/documentation/levelOne.jsp?__locale=en&amp;DocNo=DA00-W25Q16JV.1">https://www.winbond.com/hq/support/documentation/levelOne.jsp?__locale=en&amp;DocNo=DA00-W25Q16JV.1</a></a></li>
+<li><a href="https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf"><a href="https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf">https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf</a></a></li>
+</ul>
+    </div>
+    <footer class="content__footer"></footer>
+
+            </section>
+
+            <section class="page__aside">
+                <div class="aside__about">
+<div class="aside__about">
+    
+<h1 class="about__title">snowverflow</h1>
+<p class="about__description">snowverflow.tech is a technical blog owned and operated by arcticx (aka arcticcow).</p>
+</div>
+
+
+<ul class="aside__social-links">
+    
+    <li>
+        <a href="https://github.com/arcticcow" rel="me" aria-label="GitHub" title="GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="mailto:ssmilescycs@gmail.com" rel="me" aria-label="Email" title="Email"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="https://twitter.com/arctic0x78" rel="me" aria-label="Twitter" title="Twitter"><i class="fa-brands fa-twitter" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+    <li>
+        <a href="https://www.linkedin.com/in/shiloh-smiles-42076b94" rel="me" aria-label="LinkedIn" title="LinkedIn"><i class="fa-brands fa-linkedin" aria-hidden="true"></i></a>&nbsp;
+    </li>
+    
+</ul>
+</div>
+                <hr>
+                <div class="aside__content">
+    <p>Cracking the DEFCON 30 Badge Firmware</p>
+    
+        <p>
+            By Dylan, 
+            2022-11-22
+        </p>
+    
+
+    
+
+                </div>
+            </section>
+
+            <footer class="page__footer"><p>
+    
+    
+    
+    
+    
+    
+      
+    
+    
+    
+      
+      
+          
+            
+            
+                
+
+            
+          
+      
+    
+</p>
+<br /><br />
+<p class="copyright"></p>
+<p class="advertisement">Powered by <a href="https://gohugo.io/">hugo</a> and <a href="https://github.com/joeroe/risotto">risotto</a>.</p>
+</footer>
+
+        </div>
+    </body>
+
+</html>
