@@ -1,4 +1,4 @@
-I am a penetration tester and red teamer by trade with experience in many domains. As a hobby, I enjoy capture-the-flags and similar challenges. I haev began my journey into low-level constructs, and spend lots of time expanding my knowledge of reverse engineering and binary exploitation.
+I am a penetration tester and red teamer by trade with experience in many domains. As a hobby, I enjoy capture-the-flags and similar challenges. I recently discovered a passion for low-level constructs and actively seek to expand my knowledge of reverse engineering and binary exploitation.
 ```
                           ▓▓░░░█░░ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓              ████    
     ██                  ██          ██                  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓                ██  ██  

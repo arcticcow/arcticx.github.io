@@ -6,13 +6,20 @@
     <description>Recent content in Tags on arcticx@snowverflow</description>
     <generator>Hugo</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 02 Jun 2024 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 12 Jun 2024 00:00:00 +0000</lastBuildDate>
     <atom:link href="http://localhost:1313/tags/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Emulation</title>
-      <link>http://localhost:1313/tags/emulation/</link>
+      <title>Cow</title>
+      <link>http://localhost:1313/tags/cow/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/emulation/</guid>
+      <guid>http://localhost:1313/tags/cow/</guid>
+      <description></description>
+    </item>
+    <item>
+      <title>Cute</title>
+      <link>http://localhost:1313/tags/cute/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/tags/cute/</guid>
       <description></description>
     </item>
     <item>
@@ -23,80 +30,17 @@
       <description></description>
     </item>
     <item>
+      <title>Lol</title>
+      <link>http://localhost:1313/tags/lol/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/tags/lol/</guid>
+      <description></description>
+    </item>
+    <item>
       <title>Pandas</title>
       <link>http://localhost:1313/tags/pandas/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <guid>http://localhost:1313/tags/pandas/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Rop-Analysis</title>
-      <link>http://localhost:1313/tags/rop-analysis/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/rop-analysis/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Unicorn-Engine</title>
-      <link>http://localhost:1313/tags/unicorn-engine/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/unicorn-engine/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Aws</title>
-      <link>http://localhost:1313/tags/aws/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/aws/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Docker</title>
-      <link>http://localhost:1313/tags/docker/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/docker/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Infrastructure</title>
-      <link>http://localhost:1313/tags/infrastructure/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/infrastructure/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Angr</title>
-      <link>http://localhost:1313/tags/angr/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/angr/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>CTF</title>
-      <link>http://localhost:1313/tags/ctf/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/ctf/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Reversing</title>
-      <link>http://localhost:1313/tags/reversing/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/reversing/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Firmware</title>
-      <link>http://localhost:1313/tags/firmware/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/firmware/</guid>
-      <description></description>
-    </item>
-    <item>
-      <title>Iot</title>
-      <link>http://localhost:1313/tags/iot/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      <guid>http://localhost:1313/tags/iot/</guid>
       <description></description>
     </item>
   </channel>
